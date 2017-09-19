@@ -64,8 +64,17 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 ///----------------------------------
-/// @name Getting the Shared Instance
+/// @name Configuring and Getting the Shared Instance
 ///----------------------------------
+
+/**
+ Sets the restoration identifier that will be used to enable CoreBluetooth state
+ preservation/restoration. Setting a nil value will disable state preservation, and is also
+ the default value. Note that you need to set this before obtaining the shared instance for
+ the first time
+ @param identifier Restoration identifier for the CoreBluetooth central manager
+ */
++ (void)setRestorationIdentifier:(nullable NSString *)identifier;
 
 /**
  Access the shared MBLMetaWearManager object

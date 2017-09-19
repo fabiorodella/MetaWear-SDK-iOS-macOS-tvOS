@@ -51,6 +51,8 @@
 static NSString * const kMBLRememberedDevicesKey = @"com.mbientlab.metawear.rememberedDevices";
 static NSString * const kMBLApiVersionKey = @"com.mbientlab.metawear.apiversion";
 
+static NSString * MBLCoreBluetoothRestorationIdentifier = nil;
+
 #if TARGET_OS_SIMULATOR
 static BOOL useMockManager = YES;
 #else
@@ -91,6 +93,10 @@ void MBLSetUseMockManager(BOOL useMock) { useMockManager = useMock; }
         // By explicitly calling empty method - we can avoid that.
         [MBLCategoryLoader loadPrivateCategories];
     }
+}
+
++ (void)setRestorationIdentifier:(nullable NSString *)identifier {
+    MBLCoreBluetoothRestorationIdentifier = identifier;
 }
 
 + (nonnull instancetype)sharedManager
@@ -347,9 +353,14 @@ void MBLSetUseMockManager(BOOL useMock) { useMockManager = useMock; }
     if (self) {
         dispatch_queue_t bleQueue = dispatch_queue_create("com.mbientlab.metawear.bleQueue", DISPATCH_QUEUE_SERIAL);
         //self.centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:dispatch_queue_create("com.mbientlab.metawear.bleQueue", DISPATCH_QUEUE_SERIAL) options:@{ CBCentralManagerOptionRestoreIdentifierKey:@"com.mbientlab.centralManager"}];
+#if TARGET_OS_IOS || TARGET_OS_TV
+        NSDictionary *options = @{ CBCentralManagerOptionRestoreIdentifierKey: MBLCoreBluetoothRestorationIdentifier };
+#else
+        NSDictionary *options = nil;
+#endif
         NSString *version = nil;
         if (useMockManager) {
-            self.centralManager = [[MBLBluetoothCentralMock alloc] initWithDelegate:self queue:bleQueue options:nil];
+            self.centralManager = [[MBLBluetoothCentralMock alloc] initWithDelegate:self queue:bleQueue options:options];
         } else {
             self.centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:bleQueue options:nil];
             version = [[NSUserDefaults standardUserDefaults] stringForKey:kMBLApiVersionKey];
@@ -618,12 +629,12 @@ void MBLSetUseMockManager(BOOL useMock) { useMockManager = useMock; }
     }
 }
 
-//- (void)centralManager:(id<MBLBluetoothCentral>)central willRestoreState:(NSDictionary *)state
-//{
-//    NSArray *peripherals = state[CBCentralManagerRestoredStatePeripheralsKey];
-//    for (id<MBLBluetoothPeripheral> peripheral in peripherals) {
-//        [self metawearFromPeripheral:peripheral andAdvertisementData:nil RSSI:nil];
-//    }
-//}
+- (void)centralManager:(id<MBLBluetoothCentral>)central willRestoreState:(NSDictionary *)state
+{
+    NSArray *peripherals = state[CBCentralManagerRestoredStatePeripheralsKey];
+    for (id<MBLBluetoothPeripheral> peripheral in peripherals) {
+        [self metawearFromPeripheral:peripheral andAdvertisementData:nil RSSI:nil];
+    }
+}
 
 @end
